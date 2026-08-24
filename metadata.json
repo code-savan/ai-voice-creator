@@ -1,0 +1,6 @@
+{
+  "name": "Text to Speech Studio",
+  "description": "Convert text into lifelike speech with customizable AI voice styles, pitch and rate controls, waveform visualization, and audio export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

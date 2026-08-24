@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { VoiceProfile, PresetScript, SpeechHistoryItem } from "./types";
 import { VOICES, STYLES, PRESET_SCRIPTS } from "./data/voices";
 import { Navbar } from "./components/Navbar";
+import { Sidebar } from "./components/Sidebar";
 import { VoiceSelector } from "./components/VoiceSelector";
 import { StyleSelector } from "./components/StyleSelector";
 import { AudioWaveformPlayer } from "./components/AudioWaveformPlayer";
@@ -36,6 +37,7 @@ import {
   Sliders,
   ChevronRight,
   Headphones,
+  BookOpen,
 } from "lucide-react";
 
 type MobileTab = "editor" | "voices" | "styles" | "dialogue";
@@ -50,6 +52,7 @@ export default function App() {
 
   // Mobile active tab navigation
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>("editor");
+  const [activeRightPanel, setActiveRightPanel] = useState<"settings" | "voice-selection">("settings");
 
   // Mode: Single voice vs 2-Speaker Dialogue
   const [isDialogueMode, setIsDialogueMode] = useState<boolean>(false);
@@ -324,320 +327,225 @@ export default function App() {
   const selectedStyleObj = STYLES.find((s) => s.id === selectedStyle) || STYLES[0];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 pb-20 lg:pb-8">
-      {/* Top Navigation */}
-      <Navbar
-        onOpenPresets={() => setIsPresetsOpen(true)}
-        onOpenHistory={() => setIsHistoryOpen(true)}
-        historyCount={history.length}
-      />
+    <div className="flex h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 overflow-hidden">
+      {/* Left Global Navigation */}
+      <Sidebar />
 
-      {/* Main Workspace Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col gap-8 sm:gap-12">
-        {/* Error Banner */}
-        {errorMessage && (
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-              <span>{errorMessage}</span>
+      {/* Main Center Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-zinc-50 dark:bg-zinc-950 relative">
+        
+        {/* Mobile Header (Hidden on LG) */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-20">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center shrink-0">
+              <Mic className="w-4 h-4 stroke-[2.2]" />
             </div>
-            <button
-              type="button"
-              onClick={() => setErrorMessage(null)}
-              className="text-amber-700 hover:text-amber-950 dark:hover:text-white font-bold px-2 py-1 rounded text-xs shrink-0"
-            >
-              Dismiss
-            </button>
+            <h1 className="font-bold text-sm text-zinc-900 dark:text-white tracking-tight">
+              Text to Speech
+            </h1>
           </div>
-        )}
-
-        {/* Mobile Segmented Navigation Tabs (< lg screens) */}
-        <div className="lg:hidden flex items-center bg-zinc-200/70 dark:bg-zinc-900 p-1 rounded-2xl text-xs font-semibold shadow-inner border border-zinc-300/40 dark:border-zinc-800">
-          <button
-            type="button"
-            onClick={() => setActiveMobileTab("editor")}
-            className={`flex-1 min-h-[38px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl transition-all ${
-              activeMobileTab === "editor"
-                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Editor &amp; Audio</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveMobileTab("voices")}
-            className={`flex-1 min-h-[38px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl transition-all ${
-              activeMobileTab === "voices"
-                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-            }`}
-          >
-            <Mic className="w-3.5 h-3.5" />
-            <span>20 Voices</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveMobileTab("styles")}
-            className={`flex-1 min-h-[38px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl transition-all ${
-              activeMobileTab === "styles"
-                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>Styles</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setIsDialogueMode(true);
-              setActiveMobileTab("dialogue");
-            }}
-            className={`flex-1 min-h-[38px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl transition-all ${
-              activeMobileTab === "dialogue"
-                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Dialogue</span>
+          <button onClick={() => setIsHistoryOpen(true)} className="p-2 -mr-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+            <Clock className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Workspace Bento Grid (Full 2-column view on desktop lg+, tab-filtered on mobile) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
-          {/* Left Column: Script Editor & Active Player (7 cols on lg) */}
-          <div
-            className={`lg:col-span-7 flex flex-col gap-4 sm:gap-5 ${
-              activeMobileTab !== "editor" ? "hidden lg:flex" : "flex"
-            }`}
-          >
-            {/* Text Editor Box */}
-            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm p-4 sm:p-5 flex flex-col gap-3.5">
-              {/* Box Header: Title, Active Voice Pill, Mode Switcher */}
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="speech-text-input"
-                      className="font-bold text-sm sm:text-base text-zinc-900 dark:text-white block font-serif tracking-tight"
-                    >
-                      Script
-                    </label>
-                    <span className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                      Voice:{" "}
-                      <strong className="text-zinc-900 dark:text-zinc-200 font-semibold">
-                        {isDialogueMode
-                          ? `${speaker1.name} & ${speaker2.name}`
-                          : selectedVoiceObj.name}
-                      </strong>{" "}
-                      •{" "}
-                      <span className="capitalize">
-                        {isDialogueMode ? "Dialogue" : selectedStyleObj.label}
-                      </span>
-                    </span>
-                  </div>
-                </div>
+        {/* Header / Top Bar (Desktop) */}
+        <header className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0 sticky top-0 z-20">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 border border-zinc-200 dark:border-zinc-800 rounded bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center text-zinc-500">
+              <Volume2 className="w-3.5 h-3.5" />
+            </div>
+            <h2 className="font-semibold text-sm">Text to Speech</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+              Feedback
+            </button>
+            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+              Docs
+            </button>
+          </div>
+        </header>
 
-                {/* Mode Switcher: Single Voice vs Dialogue */}
-                <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-full text-xs font-medium border border-zinc-200/50 dark:border-zinc-800/50">
+        <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full gap-8">
+          
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="text-amber-700 hover:text-amber-950 dark:hover:text-white font-bold px-2 py-1 rounded text-xs shrink-0"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Text Editor Box */}
+          <div className="flex-1 flex flex-col min-h-[300px]">
+            <textarea
+              id="speech-text-input"
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Start typing here or paste any text you want to turn into lifelike speech..."
+              className="flex-1 w-full text-lg sm:text-xl leading-relaxed bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-hidden resize-none font-sans"
+            />
+            
+            {/* Get Started With Chips */}
+            {!text && (
+              <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-800/50">
+                <p className="text-xs font-medium text-zinc-500 mb-3">Get started with</p>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => handleSelectPreset(PRESET_SCRIPTS[0])} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-colors bg-white/50 dark:bg-zinc-900/50 shadow-xs">
+                    <BookOpen className="w-4 h-4 text-zinc-500" /> Narrate a story
+                  </button>
+                  <button onClick={() => handleSelectPreset(PRESET_SCRIPTS[1])} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-colors bg-white/50 dark:bg-zinc-900/50 shadow-xs">
+                    <Sparkles className="w-4 h-4 text-zinc-500" /> Record an advertisement
+                  </button>
+                  <button onClick={() => { setIsDialogueMode(true); handleSelectPreset(PRESET_SCRIPTS.find(p => p.category === "Dialogue & Podcast")!); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-colors bg-white/50 dark:bg-zinc-900/50 shadow-xs">
+                    <Users className="w-4 h-4 text-zinc-500" /> Introduce your podcast
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Audio Player Area (if generated) */}
+          <div ref={playerSectionRef} className="w-full shrink-0">
+            {audioUrl ? (
+              <AudioWaveformPlayer
+                audioUrl={audioUrl}
+                base64Audio={base64Audio}
+                voiceName={isDialogueMode ? `${speaker1.name} & ${speaker2.name}` : selectedVoice}
+                styleLabel={isDialogueMode ? "2-Speaker Dialogue" : selectedStyle}
+                textSnippet={lastGeneratedText}
+                duration={audioDuration}
+              />
+            ) : null}
+          </div>
+
+          {/* Primary Action Button (Mobile Only, Desktop handled in right panel or fixed bottom) */}
+          <div className="lg:hidden sticky bottom-0 pt-4 pb-8 bg-gradient-to-t from-zinc-50 via-zinc-50 dark:from-zinc-950 dark:via-zinc-950 to-transparent z-10">
+             <button
+                id="generate-speak-btn-mobile"
+                type="button"
+                onClick={handleGenerateSpeech}
+                disabled={isGenerating || !text.trim()}
+                className="w-full min-h-[56px] flex items-center justify-center gap-2.5 py-4 px-6 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-sm sm:text-base font-bold shadow-sm transition-transform"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Synthesizing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-5 h-5" />
+                    <span>Generate Speech</span>
+                  </>
+                )}
+              </button>
+          </div>
+        </div>
+      </main>
+
+      {/* Right Settings Sidebar */}
+      <aside className="hidden lg:flex w-[380px] border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex-col shrink-0 relative shadow-[-4px_0_24px_rgba(0,0,0,0.02)]">
+        
+        {activeRightPanel === "settings" && (
+          <>
+            {/* Tabs */}
+            <div className="flex items-center gap-6 px-6 pt-5 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
+              <button className="pb-3 text-sm font-semibold border-b-2 border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100">
+                Settings
+              </button>
+              <button onClick={() => setIsHistoryOpen(true)} className="pb-3 text-sm font-medium border-b-2 border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                History
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 pb-32">
+              
+              {/* Settings Group: Mode */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-semibold">Mode</h3>
+                <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl text-xs font-medium border border-zinc-200/50 dark:border-zinc-800/50">
                   <button
-                    id="mode-single-speaker"
-                    type="button"
                     onClick={() => setIsDialogueMode(false)}
-                    className={`min-h-[32px] flex items-center gap-1.5 px-4 py-1.5 rounded-full transition-colors ${
+                    className={`flex-1 min-h-[36px] flex items-center justify-center gap-1.5 rounded-lg transition-colors ${
                       !isDialogueMode
                         ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-bold"
                         : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                     }`}
                   >
-                    <User className="w-3.5 h-3.5" />
-                    <span>Single</span>
+                    <User className="w-3.5 h-3.5" /> Single
                   </button>
                   <button
-                    id="mode-dialogue-speaker"
-                    type="button"
-                    onClick={() => {
-                      setIsDialogueMode(true);
-                      if (!text.includes("Alex:") && !text.includes("Jordan:")) {
-                        const dialogueSample = PRESET_SCRIPTS.find(
-                          (p) => p.category === "Dialogue & Podcast"
-                        );
-                        if (dialogueSample) setText(dialogueSample.text);
-                      }
-                    }}
-                    className={`min-h-[32px] flex items-center gap-1.5 px-4 py-1.5 rounded-full transition-colors ${
+                    onClick={() => { setIsDialogueMode(true); }}
+                    className={`flex-1 min-h-[36px] flex items-center justify-center gap-1.5 rounded-lg transition-colors ${
                       isDialogueMode
                         ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-bold"
                         : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                     }`}
                   >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Dialogue</span>
+                    <Users className="w-3.5 h-3.5" /> Dialogue
                   </button>
                 </div>
               </div>
 
-              {/* Dialogue Config if in Dialogue Mode */}
-              {isDialogueMode && (
-                <DialogueModeEditor
-                  speaker1={speaker1}
-                  speaker2={speaker2}
-                  onChangeSpeaker1={setSpeaker1}
-                  onChangeSpeaker2={setSpeaker2}
-                  onInsertSpeakerTag={handleInsertSpeakerTag}
-                />
-              )}
-
-              {/* Main Textarea */}
-              <div className="relative">
-                <textarea
-                  id="speech-text-input"
-                  ref={textareaRef}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type or paste the speech text here..."
-                  rows={isDialogueMode ? 6 : 7}
-                  className="w-full text-sm sm:text-base leading-relaxed p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:border-zinc-900 dark:focus:border-zinc-100 resize-y transition-all font-sans"
-                />
-              </div>
-
-              {/* Bottom bar of editor: counts & quick helpers */}
-              <div className="flex items-center justify-between flex-wrap gap-2 pt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <span className="flex items-center gap-1">
-                    <Type className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>{charCount} chars</span>
-                  </span>
-                  <span>•</span>
-                  <span>{wordCount} words</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1 font-mono text-[11px]">
-                    <Clock className="w-3 h-3 text-zinc-400" />
-                    <span>~{estimatedSeconds}s audio</span>
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  {/* AI Script Polish */}
-                  <button
-                    id="open-script-enhancer-btn"
-                    type="button"
-                    onClick={() => setIsEnhancerOpen(true)}
-                    className="min-h-[36px] flex items-center gap-1.5 px-3 py-1 rounded-full text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors font-semibold text-xs"
-                    title="Improve phrasing, cadence and breathing pauses"
+              {/* Settings Group: Voice */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-semibold">Voice</h3>
+                
+                {!isDialogueMode ? (
+                  <button 
+                    onClick={() => setActiveRightPanel("voice-selection")}
+                    className="flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors text-left group shadow-xs"
                   >
-                    <Wand2 className="w-3.5 h-3.5" />
-                    <span>Enhance</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${selectedVoiceObj.avatarColor} text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs`}>
+                        {selectedVoiceObj.name.charAt(0)}
+                      </div>
+                      <div className="truncate">
+                        <div className="text-sm font-semibold text-zinc-900 dark:text-white">{selectedVoiceObj.name}</div>
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">{selectedVoiceObj.character}</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 shrink-0" />
                   </button>
+                ) : (
+                  <DialogueModeEditor
+                    speaker1={speaker1}
+                    speaker2={speaker2}
+                    onChangeSpeaker1={setSpeaker1}
+                    onChangeSpeaker2={setSpeaker2}
+                    onInsertSpeakerTag={handleInsertSpeakerTag}
+                  />
+                )}
+              </div>
 
-                  {/* Clear text */}
-                  {text && (
-                    <button
-                      type="button"
-                      onClick={() => setText("")}
-                      className="min-h-[36px] min-w-[36px] rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center"
-                      title="Clear text"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+              {/* Settings Group: Model */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-semibold">Model</h3>
+                <div className="flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-left shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold text-[10px] flex items-center justify-center">V2</div>
+                    <span className="text-sm font-medium">Eleven Multilingual v2</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
                 </div>
               </div>
 
-              {/* Primary Action Button */}
-              <div className="pt-2 flex items-center gap-3">
-                <button
-                  id="generate-speak-btn"
-                  type="button"
-                  onClick={handleGenerateSpeech}
-                  disabled={isGenerating || !text.trim()}
-                  className="min-h-[56px] flex-1 flex items-center justify-center gap-2.5 py-4 px-6 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-sm sm:text-base font-bold shadow-sm hover:shadow-md transition-all cursor-pointer"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Synthesizing Studio Audio (24kHz)...</span>
-                    </>
-                  ) : isBrowserSpeaking ? (
-                    <>
-                      <RotateCcw className="w-5 h-5" />
-                      <span>Speaking via Browser Audio...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="w-5 h-5 stroke-[2.4]" />
-                      <span>Generate &amp; Speak</span>
-                      <span className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-normal opacity-70 ml-1 px-2 py-0.5 rounded-full border border-white/20 dark:border-black/20">
-                        <CornerDownLeft className="w-2.5 h-2.5" />
-                        <span>Cmd+Enter</span>
-                      </span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Audio Waveform & Player Section */}
-            <div ref={playerSectionRef} className="w-full">
-              <AudioWaveformPlayer
-                audioUrl={audioUrl}
-                base64Audio={base64Audio}
-                voiceName={
-                  isDialogueMode
-                    ? `${speaker1.name} & ${speaker2.name}`
-                    : selectedVoice
-                }
-                styleLabel={
-                  isDialogueMode ? "2-Speaker Dialogue" : selectedStyle
-                }
-                textSnippet={lastGeneratedText}
-                duration={audioDuration}
-              />
-            </div>
-          </div>
-
-          {/* Right Column: 20 Voice Personas, Styles, and Presets (5 cols on lg) */}
-          <div
-            className={`lg:col-span-5 flex flex-col gap-4 sm:gap-5 ${
-              activeMobileTab === "editor" ? "hidden lg:flex" : "flex"
-            }`}
-          >
-            {/* Tab: 20 Voice Persona Picker */}
-            {(activeMobileTab === "voices" || typeof window === "undefined" || true) && (
-              <div
-                className={`p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col gap-4 ${
-                  activeMobileTab !== "voices" && activeMobileTab !== "editor" ? "hidden lg:flex" : ""
-                }`}
-              >
-                <VoiceSelector
-                  selectedVoiceId={selectedVoice}
-                  onSelectVoice={(id) => {
-                    setSelectedVoice(id);
-                    if (isDialogueMode) setIsDialogueMode(false);
-                  }}
-                  onPreviewVoice={handlePreviewVoice}
-                  previewingVoiceId={previewingVoiceId}
-                />
-              </div>
-            )}
-
-            {/* Tab: Voice Style & Emotion Delivery */}
-            {(activeMobileTab === "styles" || activeMobileTab === "editor") && (
-              <div
-                className={`p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col gap-4 ${
-                  activeMobileTab !== "styles" && activeMobileTab !== "editor" ? "hidden lg:flex" : ""
-                }`}
-              >
+              {/* Settings Group: Style */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-semibold">Style Settings</h3>
                 <StyleSelector
                   selectedStyleId={selectedStyle}
                   onSelectStyle={setSelectedStyle}
@@ -645,119 +553,59 @@ export default function App() {
                   onChangeCustomInstruction={setCustomInstruction}
                 />
               </div>
-            )}
+            </div>
 
-            {/* Tab: Dialogue Mode Setup for Mobile tab */}
-            {activeMobileTab === "dialogue" && (
-              <div className="p-4 sm:p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col gap-4">
-                <DialogueModeEditor
-                  speaker1={speaker1}
-                  speaker2={speaker2}
-                  onChangeSpeaker1={setSpeaker1}
-                  onChangeSpeaker2={setSpeaker2}
-                  onInsertSpeakerTag={(tag) => {
-                    handleInsertSpeakerTag(tag);
-                    setActiveMobileTab("editor");
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setActiveMobileTab("editor")}
-                  className="min-h-[44px] w-full py-2.5 rounded-xl bg-zinc-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5"
-                >
-                  <span>Go to Script Editor &amp; Generate</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+            {/* Bottom Generate Button Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white dark:from-zinc-950 dark:via-zinc-950 to-transparent pointer-events-none">
+              <button
+                id="generate-speak-btn"
+                type="button"
+                onClick={handleGenerateSpeech}
+                disabled={isGenerating || !text.trim()}
+                className="w-full min-h-[56px] flex items-center justify-center gap-2.5 py-4 px-6 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:bg-zinc-200 disabled:text-zinc-500 disabled:dark:bg-zinc-800 disabled:dark:text-zinc-600 pointer-events-auto text-sm font-bold shadow-lg transition-transform"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Synthesizing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-5 h-5" />
+                    <span>Generate Speech</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        )}
 
-            {/* Quick Inspiration Presets Card */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
-                  Sample Voice Scripts
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsPresetsOpen(true)}
-                  className="text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors min-h-[32px] flex items-center"
-                >
-                  View All &rarr;
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {PRESET_SCRIPTS.slice(0, 4).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSelectPreset(p)}
-                    className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-left hover:border-zinc-400 dark:hover:border-zinc-600 transition-all shadow-sm group"
-                  >
-                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block truncate group-hover:text-zinc-900 dark:group-hover:text-white">
-                      {p.title}
-                    </span>
-                    <span className="text-[10px] text-zinc-600 block truncate mt-0.5">
-                      {p.recommendedVoice} • {p.recommendedStyle}
-                    </span>
-                  </button>
-                ))}
-              </div>
+        {activeRightPanel === "voice-selection" && (
+          <div className="flex flex-col h-full bg-zinc-50/50 dark:bg-zinc-900/20">
+            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-3 sticky top-0 bg-white dark:bg-zinc-950 z-10 shrink-0">
+              <button 
+                onClick={() => setActiveRightPanel("settings")}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+              >
+                <ChevronRight className="w-4 h-4 rotate-180" />
+              </button>
+              <h2 className="text-sm font-bold">Select a voice</h2>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4">
+              <VoiceSelector
+                selectedVoiceId={selectedVoice}
+                onSelectVoice={(id) => {
+                  setSelectedVoice(id);
+                  setActiveRightPanel("settings");
+                }}
+                onPreviewVoice={handlePreviewVoice}
+                previewingVoiceId={previewingVoiceId}
+              />
             </div>
           </div>
-        </div>
-      </main>
-
-      {/* Floating Bottom Quick Action on Mobile when exploring Voices/Styles */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-20 p-3 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-3 shadow-lg pb-safe">
-        <button
-          type="button"
-          onClick={() => {
-            if (activeMobileTab !== "editor") {
-              setActiveMobileTab("editor");
-            } else {
-              handleGenerateSpeech();
-            }
-          }}
-          disabled={isGenerating || !text.trim()}
-          className="min-h-[46px] flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs sm:text-sm font-bold shadow-sm active:scale-[0.98] transition-transform"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Synthesizing...</span>
-            </>
-          ) : activeMobileTab !== "editor" ? (
-            <>
-              <FileText className="w-4 h-4" />
-              <span>Back to Editor ({selectedVoiceObj.name})</span>
-            </>
-          ) : (
-            <>
-              <Volume2 className="w-4 h-4" />
-              <span>Generate &amp; Speak</span>
-            </>
-          )}
-        </button>
-
-        {audioUrl && (
-          <button
-            type="button"
-            onClick={() => {
-              setActiveMobileTab("editor");
-              if (playerSectionRef.current) {
-                playerSectionRef.current.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
-            className="min-h-[46px] px-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold flex items-center gap-1.5"
-            title="Jump to audio player"
-          >
-            <Headphones className="w-4 h-4" />
-            <span>Player</span>
-          </button>
         )}
-      </div>
+      </aside>
 
       {/* Preset Modal */}
       <PresetModal

@@ -175,7 +175,7 @@ export function VoiceSelector({
           No voice matches &ldquo;{searchQuery}&rdquo;. Try another name or tag.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[460px] sm:max-h-[520px] overflow-y-auto pr-1">
+        <div className="flex flex-col gap-1.5 max-h-[60vh] overflow-y-auto pr-1">
           {filteredVoices.map((voice) => {
             const isSelected = selectedVoiceId === voice.id;
             const isPreviewing = previewingVoiceId === voice.id;
@@ -185,81 +185,59 @@ export function VoiceSelector({
                 key={voice.id}
                 id={`voice-card-${voice.id.toLowerCase()}`}
                 onClick={() => onSelectVoice(voice.id)}
-                className={`group relative flex flex-col p-3 rounded-xl border text-left transition-all duration-150 cursor-pointer min-h-[90px] ${
+                className={`group flex items-center justify-between p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer min-h-[64px] ${
                   isSelected
-                    ? "bg-zinc-50/90 dark:bg-zinc-950/50 border-zinc-500 dark:border-zinc-500 shadow-sm ring-2 ring-zinc-500/20"
-                    : "bg-white dark:bg-zinc-800/90 border-zinc-200 dark:border-zinc-700/70 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-2xs active:scale-[0.99]"
+                    ? "bg-zinc-50/90 dark:bg-zinc-950/50 border-zinc-500 dark:border-zinc-500 shadow-sm"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:scale-[0.99]"
                 }`}
               >
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className={`w-9 h-9 rounded-xl bg-gradient-to-br ${voice.avatarColor} text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0`}
-                    >
-                      {voice.name.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-sm text-zinc-900 dark:text-white">
-                          {voice.name}
-                        </span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
-                          {voice.gender.split("/")[0].trim()}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-zinc-600 dark:text-zinc-400 block truncate">
-                        {voice.accent}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={`w-8 h-8 rounded-full bg-gradient-to-br ${voice.avatarColor} text-white flex items-center justify-center font-bold text-[10px] shadow-xs shrink-0`}
+                  >
+                    {voice.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex flex-col justify-center">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                        {voice.name}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Preview Listen Button & Checkmark */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    {onPreviewVoice && (
-                      <button
-                        id={`preview-voice-${voice.id.toLowerCase()}`}
-                        type="button"
-                        title={`Preview ${voice.name}'s voice`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onPreviewVoice(voice);
-                        }}
-                        className={`min-w-[32px] min-h-[32px] rounded-lg text-xs flex items-center justify-center transition-colors ${
-                          isPreviewing
-                            ? "bg-zinc-600 text-white animate-pulse"
-                            : "text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700"
-                        }`}
-                      >
-                        <Volume2 className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                        isSelected
-                          ? "bg-zinc-600 text-white shadow-xs"
-                          : "border border-zinc-300 dark:border-zinc-600 text-transparent"
-                      }`}
-                    >
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </div>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 block truncate">
+                      {voice.character}
+                    </span>
                   </div>
                 </div>
 
-                <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 leading-relaxed mb-2">
-                  {voice.character}
-                </p>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-1 mt-auto">
-                  {voice.tags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-700/60 text-zinc-600 dark:text-zinc-300 font-medium"
+                {/* Actions (Preview / Check) */}
+                <div className="flex items-center gap-2 pl-2 shrink-0">
+                  {onPreviewVoice && (
+                    <button
+                      id={`preview-voice-${voice.id.toLowerCase()}`}
+                      type="button"
+                      title={`Preview ${voice.name}'s voice`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPreviewVoice(voice);
+                      }}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                        isPreviewing
+                          ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 animate-pulse"
+                          : "text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      }`}
                     >
-                      {tag}
-                    </span>
-                  ))}
+                      <Volume2 className="w-4 h-4 fill-current" />
+                    </button>
+                  )}
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                      isSelected
+                        ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs"
+                        : "opacity-0 group-hover:opacity-100 text-zinc-300 dark:text-zinc-600"
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
                 </div>
               </div>
             );
